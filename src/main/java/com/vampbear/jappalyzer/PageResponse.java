@@ -1,15 +1,16 @@
 package com.vampbear.jappalyzer;
 
+import org.apache.http.Header;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
 import java.io.BufferedReader;
 import java.io.StringReader;
 import java.net.HttpCookie;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 public class PageResponse {
 
@@ -24,10 +25,10 @@ public class PageResponse {
     private final Map<String, List<String>> metaMap = new HashMap<>();
 
     public PageResponse(String content) {
-        this(200, Collections.emptyMap(), content);
+        this(200, new Header[]{}, content);
     }
 
-    public PageResponse(int statusCode, Map<String, List<String>> headers, String content) {
+    public PageResponse(int statusCode, Header[] headers, String content) {
         this.statusCode = statusCode;
         this.setHeaders(headers);
         this.processContent(content);
@@ -56,15 +57,23 @@ public class PageResponse {
         }
     }
 
-    public void setHeaders(Map<String, List<String>> headers) {
+    public void setHeaders(Header[] headers) {
         if (headers == null) return;
-        for (String headerKey : headers.keySet()) {
-            if (headerKey != null) {
-                this.headers.put(headerKey.toLowerCase(), headers.get(headerKey));
+        for (Header header : headers) {
+            if (header != null) {
+                List<String> headerValue = new ArrayList<>();
+                headerValue.add(header.getValue());
+                this.headers.merge(
+                        header.getName().toLowerCase(),
+                        headerValue,
+                        (existingList, incomingList) -> {
+                            existingList.addAll(incomingList);
+                            return existingList;
+                        });
             }
         }
-        processCookies(headers.get("set-cookie"));
-        processCookies(headers.get("cookie"));
+        processCookies(this.headers.get("set-cookie"));
+        processCookies(this.headers.get("cookie"));
     }
 
     //TODO: Check for adding cookies twice with set headers and add header

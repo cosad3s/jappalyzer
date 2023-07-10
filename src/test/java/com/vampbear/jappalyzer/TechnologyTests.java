@@ -1,12 +1,14 @@
 package com.vampbear.jappalyzer;
 
 import com.vampbear.jappalyzer.utils.TestUtils;
+import org.apache.http.Header;
+import org.apache.http.message.BasicHeader;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.*;
 import java.io.IOException;
-import static org.assertj.core.api.Assertions.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TechnologyTests {
 
@@ -31,8 +33,8 @@ public class TechnologyTests {
     public void emptyHeaderTest() {
         Technology technology = new Technology("test");
         technology.addHeaderTemplate("X-Flex-Lang", "");
-        Map<String, List<String>> headers = new HashMap<>();
-        headers.put("X-Flex-Lang", Collections.singletonList("IT"));
+        Header header = new BasicHeader("X-Flex-Lang", "IT");
+        Header[] headers = new Header[] {header};
         PageResponse pageResponse = new PageResponse(200, headers, "");
         TechnologyMatch expected = new TechnologyMatch(technology, TechnologyMatch.HEADER);
         assertThat(technology.applicableTo(pageResponse)).isEqualTo(expected);
@@ -42,8 +44,8 @@ public class TechnologyTests {
     public void emptyHeaderPageLowerCaseTest() {
         Technology technology = new Technology("test");
         technology.addHeaderTemplate("X-Flex-Lang", "");
-        Map<String, List<String>> headers = new HashMap<>();
-        headers.put("x-flex-lang", Collections.singletonList("IT"));
+        Header header = new BasicHeader("x-flex-lang", "IT");
+        Header[] headers = new Header[] {header};
         PageResponse pageResponse = new PageResponse(200, headers, "");
         TechnologyMatch expected = new TechnologyMatch(technology, TechnologyMatch.HEADER);
         assertThat(technology.applicableTo(pageResponse)).isEqualTo(expected);
@@ -53,8 +55,8 @@ public class TechnologyTests {
     public void emptyHeaderTechnologyLowerCaseTest() {
         Technology technology = new Technology("test");
         technology.addHeaderTemplate("x-flex-lang", "");
-        Map<String, List<String>> headers = new HashMap<>();
-        headers.put("X-Flex-Lang", Collections.singletonList("IT"));
+        Header header = new BasicHeader("X-Flex-Lang", "IT");
+        Header[] headers = new Header[] {header};
         PageResponse pageResponse = new PageResponse(200, headers, "");
         TechnologyMatch expected = new TechnologyMatch(technology, TechnologyMatch.HEADER);
         assertThat(technology.applicableTo(pageResponse)).isEqualTo(expected);
@@ -72,8 +74,8 @@ public class TechnologyTests {
 
     @Test
     public void serverHeaderTest() {
-        Map<String, List<String>> headers = new HashMap<>();
-        headers.put("Server", Collections.singletonList("nginx"));
+        Header header = new BasicHeader("Server", "nginx");
+        Header[] headers = new Header[] {header};
         PageResponse pageResponse = new PageResponse(200, headers, "");
         Technology technology = new Technology("Nginx");
         technology.addHeaderTemplate("Server", "nginx(?:/([\\d.]+))?\\;version:\\1");

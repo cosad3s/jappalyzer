@@ -1,5 +1,15 @@
 package com.vampbear.jappalyzer;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,21 +32,35 @@ public class HttpClient {
     }
 
     public PageResponse getPageByUrl(String url) throws IOException {
-        HttpURLConnection conn = null;
-        try {
-            conn = getHttpURLConnection(url);
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.106 Safari/537.36 OPR/38.0.2220.41");
-            conn.setInstanceFollowRedirects(true);
-            conn.setConnectTimeout(getConnectTimeout(config));
 
-            int status = conn.getResponseCode();
-            Map<String, List<String>> headers = conn.getHeaderFields();
-            String content = readInputStream(conn);
-            return new PageResponse(status, headers, content);
-        } finally {
-            if (conn != null) conn.disconnect();
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(getConnectTimeout(config))
+                .setConnectionRequestTimeout(getConnectTimeout(config))
+                .setSocketTimeout(getConnectTimeout(config))
+                .build();
+
+        PageResponse response;
+        try (CloseableHttpClient httpclient = HttpClientBuilder
+                .create()
+                .setDefaultRequestConfig(requestConfig)
+                .setUserAgent(getUserAgent(config))
+                .build()) {
+
+            HttpGet httpget = new HttpGet(url);
+            ResponseHandler<PageResponse> responseHandler = res -> {
+                int status = res.getStatusLine().getStatusCode();
+
+                HttpEntity entity = res.getEntity();
+                String content = (entity != null) ? EntityUtils.toString(entity) : "";
+                Header[] headers = res.getAllHeaders();
+
+                return new PageResponse(status, headers, content);
+            };
+
+            response = httpclient.execute(httpget, responseHandler);
         }
+
+        return response;
     }
 
     private int getConnectTimeout(Map<String, String> config) {
@@ -51,23 +75,7 @@ public class HttpClient {
         }
     }
 
-    private String readInputStream(HttpURLConnection conn) throws IOException {
-        BufferedReader in = null;
-        try {
-            in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            StringBuilder content = new StringBuilder();
-            String inputLine;
-            while ((inputLine = in.readLine()) != null) {
-                content.append(inputLine);
-            }
-            return content.toString();
-        } finally {
-            if (in != null) try { in.close(); } catch (IOException ignored) {}
-        }
+    private String getUserAgent(Map<String, String> config) {
+        return config.getOrDefault("connect.useragent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.106 Safari/537.36 OPR/38.0.2220.41");
     }
-
-    private HttpURLConnection getHttpURLConnection(String url) throws IOException {
-        return (HttpURLConnection) new URL(url).openConnection();
-    }
-
 }
