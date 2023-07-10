@@ -58,7 +58,14 @@ public class Jappalyzer {
     }
 
     public Set<TechnologyMatch> fromUrl(String url) throws IOException {
-        HttpClient httpClient = new HttpClient();
+        return this.fromUrl(url, new HttpClient());
+    }
+
+    public Set<TechnologyMatch> fromUrl(String url, Map<String, String> config) throws IOException {
+        return this.fromUrl(url, new HttpClient(config));
+    }
+
+    private Set<TechnologyMatch> fromUrl(String url, HttpClient httpClient) throws IOException {
         PageResponse pageResponse = httpClient.getPageByUrl(url);
         return getTechnologyMatches(pageResponse);
     }
